@@ -186,5 +186,30 @@ elif app_mode == "Disease Recognition":
                 if is_healthy:
                     st.markdown(f'<div class="status-healthy">✅ {plant} - Healthy ({best_confidence:.1f}%)</div>', unsafe_allow_html=True)
                 else:
-                    st.markdown(f'<div class="status-disease">⚠️ {plant} - {disease} ({best_confidence:.1f}%)</div>', unsafe_allow
-# Top-3 breakdown implemented
+                    st.markdown(f'<div class="status-disease">⚠️ {plant} - {disease} ({best_confidence:.1f}%)</div>', unsafe_allow_html=True)
+
+                # Confidence Warning / Guidance
+                if best_confidence < 50.0:
+                    st.warning(
+                        "⚠️ **Low Confidence Prediction (< 50%)**: "
+                        "The model is uncertain. This typically happens if the photo has background clutter (hands, soil, sky), "
+                        "poor lighting, or belongs to an unsupported plant. Check the Top 3 candidates below or crop closer."
+                    )
+                elif best_confidence < 70.0:
+                    st.info("ℹ️ **Moderate Confidence**: Compare the Top 3 probable diagnoses below with visual symptoms.")
+
+                # Top 3 Candidates Breakdown
+                st.markdown("#### 📊 Top 3 Candidate Diagnoses")
+                for rank, idx in enumerate(top_indices, start=1):
+                    cand_plant, cand_dis, cand_healthy = format_class_name(CLASS_NAMES[idx])
+                    cand_prob = float(predictions[idx]) * 100
+                    tag = "Healthy" if cand_healthy else cand_dis
+                    st.write(f"**{rank}. {cand_plant}** — *{tag}* ({cand_prob:.1f}%)")
+                    st.progress(min(1.0, cand_prob / 100.0))
+
+                # Remedy Card
+                st.markdown("""<div class="remedy-box">""", unsafe_allow_html=True)
+                st.markdown(f"#### 📋 Recommended Management: {disease if not is_healthy else 'General Care'}")
+                st.markdown(f"**Typical Symptoms:** {remedy['symptoms']}")
+  
+# Confidence safeguards added
