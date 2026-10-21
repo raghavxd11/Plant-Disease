@@ -146,5 +146,45 @@ if app_mode == "Home":
 # ----------------- DISEASE RECOGNITION PAGE -----------------
 elif app_mode == "Disease Recognition":
     st.markdown('<div class="main-title">🔬 Disease Recognition</div>', unsafe_allow_html=True)
-    st.markdown('<div class="sub-title">Upload a leaf photo to diagnose crop health and view actionable tr
-# Two-column layout implemented
+    st.markdown('<div class="sub-title">Upload a leaf photo to diagnose crop health and view actionable treatment recommendations.</div>', unsafe_allow_html=True)
+
+    try:
+        model = load_trained_model()
+    except Exception as e:
+        st.error(f"Could not load model file 'trained_plant_disease_model.keras': {e}")
+        st.stop()
+
+    test_image = st.file_uploader("Upload a Leaf Image (JPG, JPEG, PNG):", type=["jpg", "jpeg", "png"])
+
+    if test_image is not None:
+        image = Image.open(test_image).convert("RGB")
+        col1, col2 = st.columns([1, 1], gap="large")
+        
+        with col1:
+            st.markdown("### 📷 Leaf Image")
+            st.image(image, width=420)
+            st.caption("ℹ️ For optimal results, ensure the infected leaf is centered with minimal background clutter.")
+
+        with col2:
+            st.markdown("### 🔍 Diagnosis")
+            if st.button("🚀 Analyze & Predict", type="primary", width=420):
+                with st.spinner("Analyzing foliar patterns..."):
+                    resized_img = image.resize((128, 128))
+                    input_arr = tf.keras.preprocessing.image.img_to_array(resized_img)
+                    input_arr = np.array([input_arr])
+                    
+                    predictions = model.predict(input_arr, verbose=0)[0]
+                    top_indices = np.argsort(predictions)[-3:][::-1]
+                    
+                    best_index = int(top_indices[0])
+                    best_confidence = float(predictions[best_index]) * 100
+                    best_raw_class = CLASS_NAMES[best_index]
+                    plant, disease, is_healthy = format_class_name(best_raw_class)
+                    remedy = get_remedy(disease, is_healthy)
+
+                # Primary Prediction Banner
+                if is_healthy:
+                    st.markdown(f'<div class="status-healthy">✅ {plant} - Healthy ({best_confidence:.1f}%)</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="status-disease">⚠️ {plant} - {disease} ({best_confidence:.1f}%)</div>', unsafe_allow
+# Top-3 breakdown implemented
