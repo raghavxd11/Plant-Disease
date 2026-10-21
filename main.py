@@ -91,5 +91,11 @@ DISEASE_REMEDIES = {
     "Esca (Black Measles)": {"symptoms": "Tiger-stripe interveinal leaf discoloration.", "treatment": "Prune infected vines during dry periods; paint pruning wounds."},
     "Leaf Blight": {"symptoms": "Irregular necrotic brown lesions on foliage.", "treatment": "Apply copper sprays; avoid overhead irrigation."},
     "Haunglongbing (Citrus Greening)": {"symptoms": "Asymmetric blotchy yellowing on leaves.", "treatment": "Manage Asian citrus psyllid vectors; remove infected trees."},
-    "Bacterial Spot": {"symptoms": "Small water-soaked angular spots turning dark.", "treatment": "Apply fixed copper mixed with ma
-# Remedies mapped
+    "Bacterial Spot": {"symptoms": "Small water-soaked angular spots turning dark.", "treatment": "Apply fixed copper mixed with mancozeb; avoid working in wet foliage."},
+    "Early Blight": {"symptoms": "Dark brown concentric target-like rings on older leaves.", "treatment": "Apply chlorothalonil or copper soap; practice 3-year crop rotation."},
+    "Late Blight": {"symptoms": "Rapidly expanding water-soaked lesions with white mold.", "treatment": "Destroy severely infected plants immediately; apply protectant fungicides."},
+    "Leaf Mold": {"symptoms": "Pale green/yellow spots on top, olive mold underneath.", "treatment": "Improve ventilation in greenhouse; reduce humidity below 85%."},
+    "Septoria Leaf Spot": {"symptoms": "Tiny circular spots with gray centers and black specks.", "treatment": "Mulch to prevent soil splash; remove lower infected leaves."},
+    "Spider Mites": {"symptoms": "Fine yellow stippling and webbing on underside.", "treatment": "Spray insecticidal soap, horticultural oil, or introduce predatory mites."},
+    "Target Spot": {"symptoms": "Brown circular lesions with faint concentric rin
+# Cached model loader integrated
