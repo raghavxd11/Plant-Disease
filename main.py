@@ -118,5 +118,33 @@ def get_remedy(disease_name: str, is_healthy: bool):
     if is_healthy:
         return {"symptoms": "Foliage appears vigorous and disease-free.", "treatment": "Maintain optimal watering and balanced fertilization."}
     for key, info in DISEASE_REMEDIES.items():
-        if 
-# Preprocessing pipeline added
+        if key.lower() in disease_name.lower() or disease_name.lower() in key.lower():
+            return info
+    return {"symptoms": "Foliar pathogen symptoms detected.", "treatment": "Isolate the plant, avoid wetting leaves, and consider a broad-spectrum organic copper fungicide."}
+
+# ----------------- SIDEBAR -----------------
+st.sidebar.title("🌿 Navigation")
+app_mode = st.sidebar.radio("Go to:", ["Home", "Disease Recognition", "About"])
+
+# ----------------- HOME PAGE -----------------
+if app_mode == "Home":
+    st.markdown('<div class="main-title">🌿 Plant Disease Recognition System</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-title">AI-powered diagnostic assistant for 38 crop disease categories across 14 plant species.</div>', unsafe_allow_html=True)
+
+    if os.path.exists("home_page.jpeg"):
+        st.image("home_page.jpeg", width=700)
+    
+    st.markdown("""
+    ### How It Works
+    1. **Upload Image:** Go to **Disease Recognition** and upload a close-up photo of a crop leaf.
+    2. **AI Diagnosis:** The deep learning model analyzes visual patterns and returns the top matched diseases.
+    3. **Treatment Guide:** View recommended symptoms checklist and actionable remedies.
+    
+    > **Tip for Best Accuracy:** The model is trained on close-up crop leaves. For real field photos, ensure the leaf fills the frame and minimize background soil/fingers.
+    """)
+
+# ----------------- DISEASE RECOGNITION PAGE -----------------
+elif app_mode == "Disease Recognition":
+    st.markdown('<div class="main-title">🔬 Disease Recognition</div>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-title">Upload a leaf photo to diagnose crop health and view actionable tr
+# Two-column layout implemented
