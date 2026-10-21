@@ -211,5 +211,37 @@ elif app_mode == "Disease Recognition":
                 st.markdown("""<div class="remedy-box">""", unsafe_allow_html=True)
                 st.markdown(f"#### 📋 Recommended Management: {disease if not is_healthy else 'General Care'}")
                 st.markdown(f"**Typical Symptoms:** {remedy['symptoms']}")
-  
-# Confidence safeguards added
+                st.markdown(f"**Recommended Action:** {remedy['treatment']}")
+                st.markdown("</div>", unsafe_allow_html=True)
+
+    with st.expander("🌱 View 14 Supported Crops & 38 Diagnosable Categories"):
+        st.markdown("""
+        The current model recognizes 38 specific classes across these 14 crops:
+        - **Apple**: Apple Scab, Black Rot, Cedar Apple Rust, Healthy
+        - **Blueberry**: Healthy
+        - **Cherry**: Powdery Mildew, Healthy
+        - **Corn (Maize)**: Cercospora Leaf Spot (Gray Leaf Spot), Common Rust, Northern Leaf Blight, Healthy
+        - **Grape**: Black Rot, Esca (Black Measles), Leaf Blight (Isariopsis), Healthy
+        - **Orange**: Huanglongbing (Citrus Greening)
+        - **Peach**: Bacterial Spot, Healthy
+        - **Pepper (Bell)**: Bacterial Spot, Healthy
+        - **Potato**: Early Blight, Late Blight, Healthy
+        - **Raspberry**: Healthy
+        - **Soybean**: Healthy
+        - **Squash**: Powdery Mildew
+        - **Strawberry**: Leaf Scorch, Healthy
+        - **Tomato**: Bacterial Spot, Early Blight, Late Blight, Leaf Mold, Septoria Leaf Spot, Spider Mites, Target Spot, Yellow Leaf Curl Virus, Mosaic Virus, Healthy
+        """)
+
+# ----------------- ABOUT PAGE -----------------
+elif app_mode == "About":
+    st.header("About")
+    st.markdown("""
+    #### About Dataset
+    This dataset is based on the PlantVillage dataset (~87,000 RGB images of healthy and diseased crop leaves across 38 classes).
+    
+    #### System Features
+    - **Top-3 Multi-Class Output:** Provides diagnostic transparency with confidence distribution.
+    - **Out-of-Distribution Warning:** Flags low confidence when an image does not match supported crops.
+    - **Trained with Transfer Learning:** MobileNetV2 with real-world data augmentation.
+    """)
