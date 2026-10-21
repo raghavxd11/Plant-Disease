@@ -139,7 +139,8 @@ Plant-Disease/
 ├── home_page.jpeg                     # Dashboard banner image
 ├── main.py                            # Streamlit web application & inference pipeline
 ├── README.md                          # Project documentation and guidelines
-├──
-
-## Running the Application
-Run with streamlit.
+├── requirement.txt                    # Project dependencies
+├── Test_plant_disease.ipynb           # Model testing & validation notebook
+├── Train_plant_disease.ipynb          # Model architecture & training notebook
+└── trained_plant_disease_model.keras  # Trained TensorFlow deep learning model
+```
