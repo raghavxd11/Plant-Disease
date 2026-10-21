@@ -80,7 +80,66 @@ The system recognizes healthy and diseased conditions across **14 agricultural c
 | 🫐 **Blueberry** | Healthy |
 | 🍒 **Cherry** | Powdery Mildew, Healthy |
 | 🌽 **Corn (Maize)** | Cercospora Leaf Spot (Gray Leaf Spot), Common Rust, Northern Leaf Blight, Healthy |
-| 🍇 **Grape** | Black Rot, Esca (Black Measles), Leaf Blight (I
+| 🍇 **Grape** | Black Rot, Esca (Black Measles), Leaf Blight (Isariopsis), Healthy |
+| 🍊 **Orange** | Huanglongbing (Citrus Greening) |
+| 🍑 **Peach** | Bacterial Spot, Healthy |
+| 🫑 **Pepper (Bell)** | Bacterial Spot, Healthy |
+| 🥔 **Potato** | Early Blight, Late Blight, Healthy |
+| 🍇 **Raspberry** | Healthy |
+| 🌱 **Soybean** | Healthy |
+| 🎃 **Squash** | Powdery Mildew |
+| 🍓 **Strawberry** | Leaf Scorch, Healthy |
+| 🍅 **Tomato** | Bacterial Spot, Early Blight, Late Blight, Leaf Mold, Septoria Leaf Spot, Spider Mites, Target Spot, Yellow Leaf Curl Virus, Mosaic Virus, Healthy |
 
-## Setup and Installation
-Coming soon.
+---
+
+## 🛠️ Installation & Setup
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/raghavxd11/Plant-Disease.git
+cd Plant-Disease
+```
+
+### 2. Set Up a Virtual Environment (Recommended)
+```bash
+python -m venv venv
+# Windows:
+.\venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
+```bash
+pip install -r requirement.txt
+```
+
+---
+
+## 💻 Running the Application
+
+Launch the Streamlit web dashboard with:
+
+```bash
+python -m streamlit run main.py
+```
+
+Once started, open `http://localhost:8501` in your browser:
+1. Navigate to the **Disease Recognition** page.
+2. Upload a close-up photo of the leaf (on a plain/grey background for best accuracy).
+3. Click **🚀 Analyze & Predict** to view the diagnosis, confidence breakdown, and remedies.
+
+---
+
+## 📁 Repository Structure
+
+```text
+Plant-Disease/
+├── home_page.jpeg                     # Dashboard banner image
+├── main.py                            # Streamlit web application & inference pipeline
+├── README.md                          # Project documentation and guidelines
+├──
+
+## Running the Application
+Run with streamlit.
