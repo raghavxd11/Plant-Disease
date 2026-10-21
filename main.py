@@ -97,5 +97,26 @@ DISEASE_REMEDIES = {
     "Leaf Mold": {"symptoms": "Pale green/yellow spots on top, olive mold underneath.", "treatment": "Improve ventilation in greenhouse; reduce humidity below 85%."},
     "Septoria Leaf Spot": {"symptoms": "Tiny circular spots with gray centers and black specks.", "treatment": "Mulch to prevent soil splash; remove lower infected leaves."},
     "Spider Mites": {"symptoms": "Fine yellow stippling and webbing on underside.", "treatment": "Spray insecticidal soap, horticultural oil, or introduce predatory mites."},
-    "Target Spot": {"symptoms": "Brown circular lesions with faint concentric rin
-# Cached model loader integrated
+    "Target Spot": {"symptoms": "Brown circular lesions with faint concentric rings.", "treatment": "Ensure good plant spacing; spray azoxystrobin or copper fungicides."},
+    "Tomato Yellow Leaf Curl Virus": {"symptoms": "Upward curling and severe yellowing of leaves.", "treatment": "Control whitefly vectors using yellow sticky traps and netting."},
+    "Tomato Mosaic Virus": {"symptoms": "Mottled light and dark green mosaic patterns.", "treatment": "Sanitize tools with trisodium phosphate; destroy infected plants."},
+    "Leaf Scorch": {"symptoms": "Purplish-brown spots expanding into scorched margins.", "treatment": "Prune old leaves after harvest; avoid excess nitrogen fertilizer."}
+}
+
+@st.cache_resource
+def load_trained_model():
+    return tf.keras.models.load_model("trained_plant_disease_model.keras")
+
+def format_class_name(raw_name: str):
+    parts = raw_name.split("___")
+    plant = parts[0].replace("_", " ").title()
+    disease = parts[1].replace("_", " ").title() if len(parts) > 1 else "Unknown"
+    is_healthy = "healthy" in raw_name.lower()
+    return plant, disease, is_healthy
+
+def get_remedy(disease_name: str, is_healthy: bool):
+    if is_healthy:
+        return {"symptoms": "Foliage appears vigorous and disease-free.", "treatment": "Maintain optimal watering and balanced fertilization."}
+    for key, info in DISEASE_REMEDIES.items():
+        if 
+# Preprocessing pipeline added
