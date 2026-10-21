@@ -76,5 +76,20 @@ CLASS_NAMES = [
     'Potato___Late_blight', 'Potato___healthy', 'Raspberry___healthy', 'Soybean___healthy',
     'Squash___Powdery_mildew', 'Strawberry___Leaf_scorch', 'Strawberry___healthy',
     'Tomato___Bacterial_spot', 'Tomato___Early_blight', 'Tomato___Late_blight', 'Tomato___Leaf_Mold',
-    'Tomato___Septoria_leaf_spot', 'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spo
-# Class taxonomy defined
+    'Tomato___Septoria_leaf_spot', 'Tomato___Spider_mites Two-spotted_spider_mite', 'Tomato___Target_Spot',
+    'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus', 'Tomato___healthy'
+]
+
+DISEASE_REMEDIES = {
+    "Apple Scab": {"symptoms": "Olive-green to black velvety spots on leaves.", "treatment": "Apply protectant fungicides (captan/mancozeb); prune canopy for airflow."},
+    "Black Rot": {"symptoms": "Circular brown leaf lesions and rotting fruit.", "treatment": "Prune out dead wood; remove mummified fruit; apply copper fungicide."},
+    "Cedar Apple Rust": {"symptoms": "Bright yellow-orange spots on leaves.", "treatment": "Apply myclobutanil or sulfur; eliminate nearby red cedar hosts if possible."},
+    "Powdery Mildew": {"symptoms": "White powdery fungal coating on foliage.", "treatment": "Spray with wettable sulfur, potassium bicarbonate, or neem oil."},
+    "Common Rust": {"symptoms": "Reddish-brown powdery pustules on leaf surfaces.", "treatment": "Plant rust-resistant hybrids; apply strobilurin fungicides if severe."},
+    "Northern Leaf Blight": {"symptoms": "Long, elliptical grayish-green or tan lesions.", "treatment": "Rotate crops; till crop residue; apply foliar fungicides."},
+    "Cercospora Leaf Spot": {"symptoms": "Small tan lesions with dark borders.", "treatment": "Improve air circulation; apply copper-based fungicides."},
+    "Esca (Black Measles)": {"symptoms": "Tiger-stripe interveinal leaf discoloration.", "treatment": "Prune infected vines during dry periods; paint pruning wounds."},
+    "Leaf Blight": {"symptoms": "Irregular necrotic brown lesions on foliage.", "treatment": "Apply copper sprays; avoid overhead irrigation."},
+    "Haunglongbing (Citrus Greening)": {"symptoms": "Asymmetric blotchy yellowing on leaves.", "treatment": "Manage Asian citrus psyllid vectors; remove infected trees."},
+    "Bacterial Spot": {"symptoms": "Small water-soaked angular spots turning dark.", "treatment": "Apply fixed copper mixed with ma
+# Remedies mapped
