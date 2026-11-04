@@ -2,6 +2,7 @@ import os
 import streamlit as st
 import tensorflow as tf
 import numpy as np
+import cv2
 from PIL import Image
 
 # Page Configuration
@@ -90,7 +91,7 @@ DISEASE_REMEDIES = {
     "Cercospora Leaf Spot": {"symptoms": "Small tan lesions with dark borders.", "treatment": "Improve air circulation; apply copper-based fungicides."},
     "Esca (Black Measles)": {"symptoms": "Tiger-stripe interveinal leaf discoloration.", "treatment": "Prune infected vines during dry periods; paint pruning wounds."},
     "Leaf Blight": {"symptoms": "Irregular necrotic brown lesions on foliage.", "treatment": "Apply copper sprays; avoid overhead irrigation."},
-    "Haunglongbing (Citrus Greening)": {"symptoms": "Asymmetric blotchy yellowing on leaves.", "treatment": "Manage Asian citrus psyllid vectors; remove infected trees."},
+    "Huanglongbing (Citrus Greening)": {"symptoms": "Asymmetric blotchy yellowing on leaves.", "treatment": "Manage Asian citrus psyllid vectors; remove infected trees."},
     "Bacterial Spot": {"symptoms": "Small water-soaked angular spots turning dark.", "treatment": "Apply fixed copper mixed with mancozeb; avoid working in wet foliage."},
     "Early Blight": {"symptoms": "Dark brown concentric target-like rings on older leaves.", "treatment": "Apply chlorothalonil or copper soap; practice 3-year crop rotation."},
     "Late Blight": {"symptoms": "Rapidly expanding water-soaked lesions with white mold.", "treatment": "Destroy severely infected plants immediately; apply protectant fungicides."},
@@ -103,16 +104,90 @@ DISEASE_REMEDIES = {
     "Leaf Scorch": {"symptoms": "Purplish-brown spots expanding into scorched margins.", "treatment": "Prune old leaves after harvest; avoid excess nitrogen fertilizer."}
 }
 
+IMG_SIZE = (128, 128)
+
 @st.cache_resource
 def load_trained_model():
     return tf.keras.models.load_model("trained_plant_disease_model.keras")
 
 def format_class_name(raw_name: str):
     parts = raw_name.split("___")
-    plant = parts[0].replace("_", " ").title()
-    disease = parts[1].replace("_", " ").title() if len(parts) > 1 else "Unknown"
+    plant = parts[0].replace("_", " ").title().strip()
+    disease = parts[1].replace("_", " ").title().strip() if len(parts) > 1 else "Unknown"
+    # The dataset folder misspells "Huanglongbing"; fix it for display only.
+    disease = disease.replace("Haunglongbing", "Huanglongbing")
     is_healthy = "healthy" in raw_name.lower()
     return plant, disease, is_healthy
+
+def preprocess_for_model(image: Image.Image) -> np.ndarray:
+    """Resize to 128x128 and wrap as a batch of 1.
+
+    Pixel scaling (0-255 -> -1..1) is built into the saved model, so no /255 here.
+    """
+    resized = image.resize(IMG_SIZE)
+    return np.array([np.asarray(resized, dtype=np.float32)])  # (1, 128, 128, 3)
+
+MIN_LEAF_FRACTION = 0.02  # below this share of green pixels we assume "no leaf in photo"
+
+def segment_leaf(image: Image.Image):
+    """Find the leaf with classic DIP steps.
+
+    1. Excess Green vegetation index, ExG = 2G - R - B (a point operation):
+       high on leaves, ~0 on grey/white backgrounds, low on brown soil.
+    2. Otsu threshold on the ExG image (with a floor, so a leaf must be clearly
+       greener than grey).
+    3. Morphological opening (remove specks) and closing (fill holes from lesions).
+    4. Keep the largest connected component = the leaf.
+
+    Returns (leaf_mask_image, box, area_fraction); box = (x, y, w, h) or None.
+    """
+    rgb = np.asarray(image)
+    f = rgb.astype(np.float32)
+    exg = 2 * f[..., 1] - f[..., 0] - f[..., 2]                   # range -510..510
+    exg8 = np.clip((exg + 255) / 2, 0, 255).astype(np.uint8)      # map to 0..255 (grey -> 127)
+
+    otsu_t, _ = cv2.threshold(exg8, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    mask = (exg8 >= max(otsu_t, 135)).astype(np.uint8) * 255      # 135 ~ ExG >= 15
+
+    k = max(3, int(min(rgb.shape[:2]) * 0.01) | 1)  # odd kernel, ~1% of image size
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
+
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    if n <= 1:
+        return Image.fromarray(mask), None, 0.0
+    largest = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+    area_frac = float(stats[largest, cv2.CC_STAT_AREA] / mask.size)
+    leaf_mask = (labels == largest).astype(np.uint8) * 255
+    box = tuple(int(v) for v in stats[largest, :4])
+    return Image.fromarray(leaf_mask), box, area_frac
+
+def auto_crop_leaf(image: Image.Image, scale: float = 1.4, max_fill: float = 0.3):
+    """Crop a SQUARE around the segmented leaf, `scale` x its longer side, so the
+    leaf sits in the frame like in the training photos and the later resize to
+    128x128 does not stretch it.
+
+    Photos where the leaf's box already covers more than `max_fill` of the image
+    are left alone (cropping them only hurts accuracy).
+    Returns (cropped_image, mask_image, cropped). If no leaf region is found or
+    no crop is needed, returns the original image with cropped=False.
+    """
+    leaf_mask, box, area_frac = segment_leaf(image)
+    if box is None or area_frac < MIN_LEAF_FRACTION:
+        return image, leaf_mask, False
+
+    x, y, w, h = box
+    W, H = image.size
+    if (w * h) / (W * H) > max_fill:  # leaf already fills the frame
+        return image, leaf_mask, False
+
+    side = int(max(w, h) * scale)
+    side = min(side, W, H)
+    cx, cy = x + w // 2, y + h // 2
+    x0 = min(max(0, cx - side // 2), W - side)
+    y0 = min(max(0, cy - side // 2), H - side)
+    return image.crop((x0, y0, x0 + side, y0 + side)), leaf_mask, True
 
 def get_remedy(disease_name: str, is_healthy: bool):
     if is_healthy:
@@ -158,21 +233,32 @@ elif app_mode == "Disease Recognition":
 
     if test_image is not None:
         image = Image.open(test_image).convert("RGB")
+        use_crop = st.checkbox(
+            "✂️ Auto-crop to the leaf (helps when the leaf is small in the photo; leaves close-ups unchanged)",
+            value=True,
+        )
+        model_image = image
+        _, _, leaf_fraction = segment_leaf(image)
+        if use_crop:
+            model_image, leaf_mask, cropped = auto_crop_leaf(image)
+            if not cropped:
+                st.caption("No crop applied: the leaf already fills the photo, or no single leaf could be isolated.")
+
         col1, col2 = st.columns([1, 1], gap="large")
-        
+
         with col1:
             st.markdown("### 📷 Leaf Image")
-            st.image(image, width=420)
+            st.image(model_image, width=420)
+            if use_crop:
+                with st.expander("Show segmentation steps"):
+                    st.image([image, leaf_mask], caption=["Original", "Leaf mask (ExG + Otsu + morphology)"], width=200)
             st.caption("ℹ️ For optimal results, ensure the infected leaf is centered with minimal background clutter.")
 
         with col2:
             st.markdown("### 🔍 Diagnosis")
             if st.button("🚀 Analyze & Predict", type="primary", width=420):
                 with st.spinner("Analyzing foliar patterns..."):
-                    resized_img = image.resize((128, 128))
-                    input_arr = tf.keras.preprocessing.image.img_to_array(resized_img)
-                    input_arr = np.array([input_arr])
-                    
+                    input_arr = preprocess_for_model(model_image)
                     predictions = model.predict(input_arr, verbose=0)[0]
                     top_indices = np.argsort(predictions)[-3:][::-1]
                     
@@ -182,37 +268,57 @@ elif app_mode == "Disease Recognition":
                     plant, disease, is_healthy = format_class_name(best_raw_class)
                     remedy = get_remedy(disease, is_healthy)
 
-                # Primary Prediction Banner
-                if is_healthy:
-                    st.markdown(f'<div class="status-healthy">✅ {plant} - Healthy ({best_confidence:.1f}%)</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown(f'<div class="status-disease">⚠️ {plant} - {disease} ({best_confidence:.1f}%)</div>', unsafe_allow_html=True)
+                def show_top3():
+                    for rank, idx in enumerate(top_indices, start=1):
+                        cand_plant, cand_dis, cand_healthy = format_class_name(CLASS_NAMES[idx])
+                        cand_prob = float(predictions[idx]) * 100
+                        tag = "Healthy" if cand_healthy else cand_dis
+                        st.write(f"**{rank}. {cand_plant}** — *{tag}* ({cand_prob:.1f}%)")
+                        st.progress(min(1.0, cand_prob / 100.0))
 
-                # Confidence Warning / Guidance
-                if best_confidence < 50.0:
-                    st.warning(
-                        "⚠️ **Low Confidence Prediction (< 50%)**: "
-                        "The model is uncertain. This typically happens if the photo has background clutter (hands, soil, sky), "
-                        "poor lighting, or belongs to an unsupported plant. Check the Top 3 candidates below or crop closer."
+                # Leaf-presence check: the model always names one of its 38 classes, even
+                # for a photo with no leaf (random noise scores ~98%), so its confidence
+                # alone cannot catch this. A green-pixel check on the photo can.
+                if leaf_fraction < MIN_LEAF_FRACTION:
+                    st.error(
+                        "🚫 **No leaf detected.** Less than 2% of this photo looks like green leaf tissue. "
+                        "The model always picks one of its 38 classes, even for non-leaf photos, "
+                        "so no diagnosis is shown. Upload a close-up of a single leaf."
                     )
-                elif best_confidence < 70.0:
-                    st.info("ℹ️ **Moderate Confidence**: Compare the Top 3 probable diagnoses below with visual symptoms.")
+                    with st.expander("Show the model's raw guess anyway (unreliable)"):
+                        show_top3()
+                else:
+                    # Primary Prediction Banner
+                    if is_healthy:
+                        st.markdown(f'<div class="status-healthy">✅ {plant} - Healthy ({best_confidence:.1f}%)</div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'<div class="status-disease">⚠️ {plant} - {disease} ({best_confidence:.1f}%)</div>', unsafe_allow_html=True)
 
-                # Top 3 Candidates Breakdown
-                st.markdown("#### 📊 Top 3 Candidate Diagnoses")
-                for rank, idx in enumerate(top_indices, start=1):
-                    cand_plant, cand_dis, cand_healthy = format_class_name(CLASS_NAMES[idx])
-                    cand_prob = float(predictions[idx]) * 100
-                    tag = "Healthy" if cand_healthy else cand_dis
-                    st.write(f"**{rank}. {cand_plant}** — *{tag}* ({cand_prob:.1f}%)")
-                    st.progress(min(1.0, cand_prob / 100.0))
+                    # Confidence Warning / Guidance
+                    if best_confidence < 50.0:
+                        st.warning(
+                            "⚠️ **Low Confidence Prediction (< 50%)**: "
+                            "The model is uncertain. This typically happens if the photo has background clutter (hands, soil, sky), "
+                            "poor lighting, or belongs to an unsupported plant. Check the Top 3 candidates below or crop closer."
+                        )
+                    elif best_confidence < 70.0:
+                        st.info("ℹ️ **Moderate Confidence**: Compare the Top 3 probable diagnoses below with visual symptoms.")
 
-                # Remedy Card
-                st.markdown("""<div class="remedy-box">""", unsafe_allow_html=True)
-                st.markdown(f"#### 📋 Recommended Management: {disease if not is_healthy else 'General Care'}")
-                st.markdown(f"**Typical Symptoms:** {remedy['symptoms']}")
-                st.markdown(f"**Recommended Action:** {remedy['treatment']}")
-                st.markdown("</div>", unsafe_allow_html=True)
+                    # Top 3 Candidates Breakdown
+                    st.markdown("#### 📊 Top 3 Candidate Diagnoses")
+                    show_top3()
+
+                    # Remedy Card
+                    # Each st.markdown call is rendered separately, so an opening <div> and a
+                    # closing </div> in different calls never wrap anything. Build it in one call.
+                    st.markdown(
+                        f"""<div class="remedy-box">
+<h4>📋 Recommended Management: {disease if not is_healthy else 'General Care'}</h4>
+<p><b>Typical Symptoms:</b> {remedy['symptoms']}</p>
+<p><b>Recommended Action:</b> {remedy['treatment']}</p>
+</div>""",
+                        unsafe_allow_html=True,
+                    )
 
     with st.expander("🌱 View 14 Supported Crops & 38 Diagnosable Categories"):
         st.markdown("""
@@ -242,6 +348,7 @@ elif app_mode == "About":
     
     #### System Features
     - **Top-3 Multi-Class Output:** Provides diagnostic transparency with confidence distribution.
-    - **Out-of-Distribution Warning:** Flags low confidence when an image does not match supported crops.
+    - **No-Leaf Check:** An image-processing check (Excess Green index + Otsu threshold) blocks the diagnosis when the photo contains no leaf; low-confidence warnings flag uncertain predictions.
+    - **Leaf Auto-Crop (optional):** Segments the leaf and crops to it, so the leaf fills the frame like in the training photos.
     - **Trained with Transfer Learning:** MobileNetV2 with real-world data augmentation.
     """)

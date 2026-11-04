@@ -54,9 +54,28 @@ The diagnostic pipeline processes leaf images through an end-to-end convolutiona
 ```
 
 ### Architecture Highlights:
-* **Feature Extractor:** Convolutional Neural Network with transfer learning optimized for foliar pattern recognition.
-* **Input Dimension:** 128 × 128 × 3 (RGB).
+* **Feature Extractor:** MobileNetV2 pre-trained on ImageNet, kept frozen (transfer learning).
+* **Built into the model:** data augmentation (flip, rotate, zoom, contrast; active only during training) and pixel rescaling to [−1, 1], so the app passes raw 0–255 pixels.
+* **Classifier head:** Global Average Pooling → Dropout 0.3 → Dense 512 (ReLU) → Dropout 0.2 → Dense 38 (softmax).
+* **Input Dimension:** 128 × 128 × 3 (RGB), resized with bilinear interpolation in both training and the app.
 * **Classification:** Softmax output across 38 categories with confidence estimation and Top-3 probability breakdown.
+
+---
+
+## 🧪 Training & Evaluation
+
+| Notebook | Model it trains | Status |
+| :--- | :--- | :--- |
+| `Train_mobilenetv2.ipynb` | **MobileNetV2 transfer learning: the model the app uses** | Current |
+| `Train_plant_disease.ipynb` | Custom 10-layer CNN trained from scratch | Baseline only, not used by the app |
+| `Test_plant_disease.ipynb` | Single-image prediction demo | — |
+
+`Train_mobilenetv2.ipynb` splits `train/` 90/10 into train/validation, keeps `valid/` as an untouched **test set**, uses early stopping, and reports accuracy, per-class precision/recall and a confusion matrix.
+
+> [!NOTE]
+> The 95.75% accuracy in `Train_plant_disease.ipynb` belongs to the **baseline CNN**, not the shipped model.
+> To get the shipped model's test score without retraining, run sections 1–3 of `Train_mobilenetv2.ipynb`
+> (it writes `metrics_shipped_model.json`).
 
 ---
 
@@ -67,6 +86,7 @@ The diagnostic pipeline processes leaf images through an end-to-end convolutiona
 * **Confidence Safeguards:** Alerts users when confidence is low (<50%) or moderate (<70%), suggesting better framing.
 * **Management & Remedy Guide:** Symptoms checklist and actionable treatment recommendations for detected diseases.
 * **Interactive UI:** Clean Streamlit dashboard with responsive layout and reference drawers.
+* **Leaf Auto-Crop & No-Leaf Check:** Classic image-processing step (Excess Green index ExG = 2G − R − B → Otsu threshold → morphological opening/closing → largest connected component) that crops photos where the leaf is small, and blocks the diagnosis when no leaf is present. The segmentation mask is shown for inspection.
 
 ---
 
@@ -128,7 +148,17 @@ python -m streamlit run main.py
 Once started, open `http://localhost:8501` in your browser:
 1. Navigate to the **Disease Recognition** page.
 2. Upload a close-up photo of the leaf (on a plain/grey background for best accuracy).
-3. Click **🚀 Analyze & Predict** to view the diagnosis, confidence breakdown, and remedies.
+3. **✂️ Auto-crop to the leaf** is on by default; it only crops when the leaf is small in the photo.
+4. Click **🚀 Analyze & Predict** to view the diagnosis, confidence breakdown, and remedies.
+
+---
+
+## ⚠️ Known Limitations
+
+* **Lab-style training data:** PlantVillage leaves are photographed on plain backgrounds, so accuracy drops on real field photos. Auto-crop helps but does not remove this gap; retraining with field images would.
+* **Closed set of 38 classes:** the model always picks one of its 38 classes (random noise scores ~98% confidence). The no-leaf check catches photos with no green leaf, but an *unsupported* plant's leaf (e.g. a rose) will still be given one of the 38 labels.
+* **Optimistic test score:** the Kaggle dataset was built with offline augmentation, so near-duplicates of a leaf can appear in both `train/` and `valid/`.
+* **Remedies are a fixed lookup table** written by hand, not generated or verified by the model. Consult a local agricultural expert before treating crops.
 
 ---
 
@@ -140,7 +170,8 @@ Plant-Disease/
 ├── main.py                            # Streamlit web application & inference pipeline
 ├── README.md                          # Project documentation and guidelines
 ├── requirement.txt                    # Project dependencies
-├── Test_plant_disease.ipynb           # Model testing & validation notebook
-├── Train_plant_disease.ipynb          # Model architecture & training notebook
-└── trained_plant_disease_model.keras  # Trained TensorFlow deep learning model
+├── Test_plant_disease.ipynb           # Single-image prediction demo
+├── Train_mobilenetv2.ipynb            # Trains + evaluates the MobileNetV2 model the app uses
+├── Train_plant_disease.ipynb          # Baseline custom CNN (not used by the app)
+└── trained_plant_disease_model.keras  # Shipped MobileNetV2 model loaded by main.py
 ```
