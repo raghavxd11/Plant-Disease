@@ -70,7 +70,18 @@ The diagnostic pipeline processes leaf images through an end-to-end convolutiona
 | `Train_plant_disease.ipynb` | Custom 10-layer CNN trained from scratch | Baseline only, not used by the app |
 | `Test_plant_disease.ipynb` | Single-image prediction demo | — |
 
-`Train_mobilenetv2.ipynb` splits `train/` 90/10 into train/validation, keeps `valid/` as an untouched **test set**, uses early stopping, and reports accuracy, per-class precision/recall and a confusion matrix.
+`Train_mobilenetv2.ipynb` trains the MobileNetV2 model with a separate validation and test set, early stopping, and reports accuracy, per-class precision/recall and a confusion matrix.
+
+### Results
+The shipped model was trained on the full PlantVillage colour dataset (54,305 images, 38 classes) with a stratified 80/10/10 train/validation/test split, for 12 epochs, keeping the epoch with the lowest validation loss.
+
+| Metric (held-out test set, 5,430 images) | Value |
+| :--- | :--- |
+| Accuracy | 94.29% |
+| Macro F1-score | 0.929 |
+| Weakest class | Tomato Early Blight (recall 0.58) |
+
+![Confusion matrix](results/confusion_matrix.png)
 
 > [!NOTE]
 > The 95.75% accuracy in `Train_plant_disease.ipynb` belongs to the **baseline CNN**, not the MobileNetV2 model used by the app.
@@ -155,7 +166,7 @@ Once started, open `http://localhost:8501` in your browser:
 
 * **Lab-style training data:** PlantVillage leaves are photographed on plain backgrounds, so accuracy drops on real field photos. Auto-crop helps but does not remove this gap; retraining with field images would.
 * **Closed set of 38 classes:** the model always picks one of its 38 classes (random noise scores ~98% confidence). The no-leaf check catches photos with no green leaf, but an *unsupported* plant's leaf (e.g. a rose) will still be given one of the 38 labels.
-* **Optimistic test score:** the Kaggle dataset was built with offline augmentation, so near-duplicates of a leaf can appear in both `train/` and `valid/`.
+* **Lab-only evaluation:** the 94.29% test accuracy is on PlantVillage photos (single leaf, plain background). Accuracy on real field photos is expected to be lower.
 * **Remedies are a fixed lookup table** written by hand, not generated or verified by the model. Consult a local agricultural expert before treating crops.
 
 ---
