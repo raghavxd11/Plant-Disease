@@ -53,6 +53,9 @@ st.markdown("""
         padding: 16px;
         margin-top: 15px;
     }
+    .remedy-box, .remedy-box * {
+        color: #2f3b12 !important;
+    }
     .top-candidate {
         background-color: #f1f8e9;
         border-radius: 6px;
