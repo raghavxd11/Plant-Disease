@@ -73,9 +73,7 @@ The diagnostic pipeline processes leaf images through an end-to-end convolutiona
 `Train_mobilenetv2.ipynb` splits `train/` 90/10 into train/validation, keeps `valid/` as an untouched **test set**, uses early stopping, and reports accuracy, per-class precision/recall and a confusion matrix.
 
 > [!NOTE]
-> The 95.75% accuracy in `Train_plant_disease.ipynb` belongs to the **baseline CNN**, not the shipped model.
-> To get the shipped model's test score without retraining, run sections 1–3 of `Train_mobilenetv2.ipynb`
-> (it writes `metrics_shipped_model.json`).
+> The 95.75% accuracy in `Train_plant_disease.ipynb` belongs to the **baseline CNN**, not the MobileNetV2 model used by the app.
 
 ---
 
